@@ -1,3 +1,5 @@
 .idea/
 go.sum
 .DS_Store
+./client/client
+./server/server

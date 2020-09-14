@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-const port = ":9090"
-
 type server struct {
 }
 
@@ -23,12 +21,14 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 }
 
 func main() {
-	lis, err := net.Listen("tcp", port)
+	lis, err := net.Listen("tcp", ":0")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	registService()
+	_, port, err := net.SplitHostPort(lis.Addr().String())
+
+	registService(":" + port)
 
 	s := grpc.NewServer()
 	pb.RegisterGreeterServer(s, &server{})
@@ -37,7 +37,7 @@ func main() {
 	}
 }
 
-func registService() {
+func registService(port string) {
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{"127.0.0.1:2379"},
 		DialTimeout: 5 * time.Second,
@@ -51,7 +51,7 @@ func registService() {
 	ipStr, _ := GetInnerIp()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	resp, err := cli.Put(ctx, "server_ip", ipStr+":9090")
+	resp, err := cli.Put(ctx, "server_ip", ipStr+port)
 	cancel()
 	if err != nil {
 		fmt.Errorf("error while put: %+v", err)

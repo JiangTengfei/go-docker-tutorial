@@ -48,7 +48,7 @@ func registService() {
 	}
 	defer cli.Close()
 
-	ipStr, _ := GetInterIp()
+	ipStr, _ := GetInnerIp()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	resp, err := cli.Put(ctx, "server_ip", ipStr+":9090")
@@ -59,7 +59,7 @@ func registService() {
 	log.Printf("resp: %+v", resp)
 }
 
-func GetInterIp() (string, error) {
+func GetInnerIp() (string, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return "", err

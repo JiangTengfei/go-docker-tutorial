@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/coreos/etcd/clientv3"
 	pb "github.com/jiangtengfei/go-docker-tutorial-pub/grpc"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-const port  = ":9090"
+const port = ":9090"
 
 type server struct {
 }
@@ -47,11 +48,32 @@ func registService() {
 	}
 	defer cli.Close()
 
+	ipStr, _ := GetInterIp()
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	resp, err := cli.Put(ctx, "server_ip", "127.0.0.1:9090")
+	resp, err := cli.Put(ctx, "server_ip", ipStr+":9090")
 	cancel()
 	if err != nil {
 		fmt.Errorf("error while put: %+v", err)
 	}
 	log.Printf("resp: %+v", resp)
+}
+
+func GetInterIp() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
+	}
+
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				//fmt.Println(ipnet.IP.String())
+				return ipnet.IP.String(), nil
+			}
+		}
+	}
+
+	return "", errors.New("no inter ip")
 }

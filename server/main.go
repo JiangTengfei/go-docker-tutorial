@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/coreos/etcd/clientv3"
 	pb "github.com/jiangtengfei/go-docker-tutorial-pub/grpc"
+	"go.etcd.io/etcd/clientv3"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -39,7 +39,7 @@ func main() {
 
 func registService(port string) {
 	cli, err := clientv3.New(clientv3.Config{
-		Endpoints:   []string{"127.0.0.1:2379"},
+		Endpoints:   []string{"host.docker.internal:2379"},
 		DialTimeout: 5 * time.Second,
 	})
 	if err != nil {
@@ -48,7 +48,7 @@ func registService(port string) {
 	}
 	defer cli.Close()
 
-	ipStr, _ := GetInnerIp()
+	ipStr, _ := GetinternalIp()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	resp, err := cli.Put(ctx, "server_ip", ipStr+port)
@@ -59,7 +59,7 @@ func registService(port string) {
 	log.Printf("resp: %+v", resp)
 }
 
-func GetInnerIp() (string, error) {
+func GetinternalIp() (string, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return "", err

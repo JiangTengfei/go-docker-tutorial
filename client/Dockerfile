@@ -1,4 +1,7 @@
 FROM golang:latest
+
+ENV GO111MODULE=on
+
 MAINTAINER JTF "jtf.pub@gmail.com"
 
 WORKDIR $GOPATH/src/go-docker-tutorial/client

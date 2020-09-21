@@ -44,4 +44,6 @@ docker 18.03 加入了一个 feature，在容器中可以通过`host.docker.inte
 -[ ] balance of service
 -[ ] service health check
 -[ ] graceful shutdown
+-[ ] grpc connection pool
+-[ ] logger
 -[ ] build a framework

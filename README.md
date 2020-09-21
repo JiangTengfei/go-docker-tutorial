@@ -35,4 +35,13 @@ docker 18.03 加入了一个 feature，在容器中可以通过`host.docker.inte
 > Use your internal IP address or connect to the special DNS name host.docker.internal which will resolve to the internal IP address used by the host.
 
 
+## Have already implemented features
 
+-[x] grpc
+-[x] docker
+-[x] service discovery
+-[x] service registry
+-[ ] balance of service
+-[ ] service health check
+-[ ] graceful shutdown
+-[ ] build a framework

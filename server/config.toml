@@ -1,0 +1,3 @@
+[app]
+appId = "com.godockertutorial.tutorial.sayhello"
+logDir = "/"

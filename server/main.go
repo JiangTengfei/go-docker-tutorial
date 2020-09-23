@@ -12,19 +12,23 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
+var appConfig config.AppConfig
+var shutdownChan = make(chan os.Signal)
+var unloadChan = make(chan struct{})
+
 type server struct {
 }
-
-var appConfig config.AppConfig
 
 func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
 	log.Printf("Received: %v", in.GetName())
 	return &pb.HelloReply{Message: "Hello " + in.GetName()}, nil
 }
-
 
 func init() {
 	if _, err := toml.DecodeFile("config.toml", &appConfig); err != nil {
@@ -47,35 +51,68 @@ func main() {
 
 	_, port, err := net.SplitHostPort(lis.Addr().String())
 
-	registService(flagArgs.AppId, ":" + port)
+	if err := registService(flagArgs.AppId, ":"+port); err != nil {
+		log.Fatalf("failed to regist service: %v", err)
+	}
 
 	s := grpc.NewServer()
 	pb.RegisterGreeterServer(s, &server{})
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	signal.Notify(shutdownChan, syscall.SIGINT, syscall.SIGTERM)
+	sdSig := <- shutdownChan
+	log.Printf("receive shutdown signal: %v", sdSig)
+	unRegister()
+
+	time.Sleep(2*time.Second)
+	s.GracefulStop()
 }
 
-func registService(appId, port string) {
+func registService(appId, port string) error {
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{"host.docker.internal:2379"},
 		DialTimeout: 5 * time.Second,
 	})
 	if err != nil {
 		log.Print("error occurred while create etcd client")
-		return
+		return errors.New("error occurred while create etcd client")
 	}
-	defer cli.Close()
 
 	ipStr, _ := GetinternalIp()
 
+	key := fmt.Sprintf("%s/%s%s", appId, ipStr, port)
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	resp, err := cli.Put(ctx, appId+"/"+ipStr+port, ipStr+port)
-	cancel()
+	defer cancel()
+
+	leaseResp, err := cli.Grant(ctx, 10)
 	if err != nil {
-		fmt.Errorf("error while put: %+v", err)
+		log.Printf("Grant method return err: %v", err)
+		return errors.New("Grant method return err: " + err.Error())
 	}
-	log.Printf("resp: %+v", resp)
+
+	resp, err := cli.Put(ctx, key, ipStr+port, clientv3.WithLease(leaseResp.ID))
+	if _, err := cli.KeepAlive(context.TODO(), leaseResp.ID); err != nil {
+		return fmt.Errorf("KeepAlive failed. %s", err.Error())
+	}
+
+	go func() {
+		sig := <- unloadChan
+		log.Printf("receive unloadChan signal: %v", sig)
+		cli.Delete(context.Background(), key)
+	}()
+
+	log.Printf("registService resp: %+v", resp)
+	return nil
+}
+
+func unRegister()  {
+	unloadChan <- struct{}{}
 }
 
 func GetinternalIp() (string, error) {

@@ -41,9 +41,10 @@ docker 18.03 加入了一个 feature，在容器中可以通过`host.docker.inte
 -[x] docker
 -[x] service discovery
 -[x] service registry
--[ ] balance of service
+-[ ] load balance
 -[ ] service health check
 -[ ] graceful shutdown
 -[ ] grpc connection pool
 -[ ] logger
+-[ ] swim lane
 -[ ] build a framework

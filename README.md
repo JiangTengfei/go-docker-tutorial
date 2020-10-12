@@ -43,8 +43,9 @@ docker 18.03 加入了一个 feature，在容器中可以通过`host.docker.inte
 -[x] service registry
 -[ ] load balance
 -[ ] service health check
--[ ] graceful shutdown
+-[x] graceful shutdown
 -[ ] grpc connection pool
 -[ ] logger
 -[ ] swim lane
 -[ ] build a framework
+-[ ] rage limit
